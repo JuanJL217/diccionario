@@ -28,37 +28,56 @@ func crearTabla[K comparable, V any](capacidad int) []hashElemento[K, V] {
 }
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] { //CrearHash inicializará la capacidad del vector y la tabla. Esa tabla es la que nos importa para la lógica
-	return &tablaHash[K, V]{capacidad: _CAPACIDAD_INICIAL, tabla: []hashElemento[K, V]{}}
+	return &tablaHash[K, V]{capacidad: _CAPACIDAD_INICIAL, tabla: crearTabla[K, V](_CAPACIDAD_INICIAL)}
 }
 
 func (th *tablaHash[K, V]) Guardar(clave K, dato V) {
-	
+	pos := th.buscarClavePosicion(clave)
+	if th.tabla[pos].clave == clave {
+		th.tabla[pos].dato = dato
+	} else {
+		th.tabla[pos].clave = clave
+		th.tabla[pos].dato = dato
+		th.tabla[pos].estado = _CASILLA_OCUPADA
+		th.cantidad++
+	}
+}
 
+func (th *tablaHash[K, V]) Pertenece(clave K) bool {
+	pos := th.hashingPosicion(clave)
+	return th.tabla[pos].estado == _CASILLA_OCUPADA && th.tabla[pos].clave == clave
+}
+
+func (th *tablaHash[K, V]) Obtener(clave K) V {
+	pos := th.buscarClavePosicion(clave)
+	if th.tabla[pos].estado == _CASILLA_VACIA {
+		panic(_PANIC_CLAVE_DICCIONARIO)
+	}
+	return th.tabla[pos].dato
+}
+
+func (th *tablaHash[K, V]) Borrar(clave K) V {
+	pos := th.buscarClavePosicion(clave)
+	if th.tabla[pos].estado == _CASILLA_VACIA {
+		panic(_PANIC_CLAVE_DICCIONARIO)
+	}
+	if th.tabla[pos].clave == clave {
+		th.tabla[pos].estado = _CLAVE_BORRADA
+	}
+	th.borrados++
+	return th.tabla[pos].dato
+}
+
+func (th *tablaHash[K, V]) Cantidad() int {
+	return th.cantidad
+}
+
+func (th *tablaHash[K, V]) Iterar(func(clave K, dato V) bool) {
 	return
 }
 
-func (hash *tablaHash[K, V]) Pertenece(clave K) bool {
-	return true
-}
-
-func (hash *tablaHash[K, V]) Obtener(clave K) V {
-	return
-}
-
-func (hash *tablaHash[K, V]) Borrar(clave K) V {
-	return
-}
-
-func (hash *tablaHash[K, V]) Cantidad() int {
-	return
-}
-
-func (hash *tablaHash[K, V]) Iterar(func(clave K, dato V) bool) {
-	return
-}
-
-func (hash *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
-	return
+func (th *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
+	return nil
 }
 
 /*
@@ -67,19 +86,26 @@ func (hash *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
 ****************************************************************
 */
 
-func (th tablaHash[K, V]) buscarEstado(pos int) int {
-	if th.tabla[pos].estado == _CASILLA_VACIA || th.tabla[pos].estado  == _CLAVE_BORRADA{
-		return pos
+func (th tablaHash[K, V]) buscarClavePosicion(clave K) int {
+	pos := th.hashingPosicion(clave)
+	fmt.Println(clave)
+	for i := pos; i < th.capacidad; i++ {
+		if th.tabla[i].clave == clave && th.tabla[i].estado == _CASILLA_OCUPADA {
+			return i
+		} else if th.tabla[i].estado == _CASILLA_VACIA {
+			pos = i
+			break
+		}
+		if i == th.capacidad-1 {
+			i = 0
+		}
 	}
-	for pos := pos + 1 ; pos < len(th.tabla) ; pos ++ {
-		if pos
-	}
-
+	return pos
 }
 
 // CODIGO FUENTE : https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 // USAMOS EL METODO FNV-HASHING
-func hashing[K comparable](clave K, largo int) int {
+func (th tablaHash[K, V]) hashingPosicion(clave K) int {
 	var (
 		base uint32 = 2166136261
 		dato uint32 = 16777619
@@ -89,7 +115,7 @@ func hashing[K comparable](clave K, largo int) int {
 		base ^= uint32(valor)
 		base *= dato
 	}
-	return int(base) % largo
+	return int(base) % th.capacidad
 
 }
 
