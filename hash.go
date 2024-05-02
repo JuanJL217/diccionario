@@ -31,21 +31,14 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] { //CrearHash inicializa
 	return &tablaHash[K, V]{capacidad: _CAPACIDAD_INICIAL, tabla: []hashElemento[K, V]{}}
 }
 
-func convertirABytes[K comparable](clave K) []byte { //Función de la cátedra para obtener un array de bytes de la clave
-	return []byte(fmt.Sprintf("%v", clave))
-}
+func (th *tablaHash[K, V]) Guardar(clave K, dato V) {
+	
 
-func hashing(arrayBytes []byte) int { //DEBEMOS BUSCAR UNA FUNCIÓN DE HASHEO, AYUDAMEEEEEEEEE
-	elementoHasheado := 0
-	return elementoHasheado
-}
-
-func (hash *tablaHash[K, V]) Guardar(clave K, dato V) {
 	return
 }
 
 func (hash *tablaHash[K, V]) Pertenece(clave K) bool {
-	return
+	return true
 }
 
 func (hash *tablaHash[K, V]) Obtener(clave K) V {
@@ -66,4 +59,40 @@ func (hash *tablaHash[K, V]) Iterar(func(clave K, dato V) bool) {
 
 func (hash *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
 	return
+}
+
+/*
+****************************************************************
+-----------------FUNCIONES AUXILIARES--------------------------
+****************************************************************
+*/
+
+func (th tablaHash[K, V]) buscarEstado(pos int) int {
+	if th.tabla[pos].estado == _CASILLA_VACIA || th.tabla[pos].estado  == _CLAVE_BORRADA{
+		return pos
+	}
+	for pos := pos + 1 ; pos < len(th.tabla) ; pos ++ {
+		if pos
+	}
+
+}
+
+// CODIGO FUENTE : https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+// USAMOS EL METODO FNV-HASHING
+func hashing[K comparable](clave K, largo int) int {
+	var (
+		base uint32 = 2166136261
+		dato uint32 = 16777619
+	)
+	arrayBytes := convertirABytes(clave)
+	for _, valor := range arrayBytes {
+		base ^= uint32(valor)
+		base *= dato
+	}
+	return int(base) % largo
+
+}
+
+func convertirABytes[K comparable](clave K) []byte { //Función de la cátedra para obtener un array de bytes de la clave
+	return []byte(fmt.Sprintf("%v", clave))
 }
