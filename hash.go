@@ -41,58 +41,6 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &tablaHash[K, V]{tabla: crearTabla[K, V](_CAPACIDAD_INICIAL)}
 }
 
-func (th tablaHash[K, V]) capacidad() int {
-	return cap(th.tabla)
-}
-
-func (th tablaHash[K, V]) cantidadMaximaRedimensionar() bool {
-	return (th.ocupados + th.borrados) >= int((float64(th.capacidad()) * _FACTOR_CAPACIDAD_MAXIMA))
-}
-
-func (th tablaHash[K, V]) capacidadAceptadaParaAchicar() bool {
-	return th.ocupados > _CAPACIDAD_INICIAL
-}
-
-func (th tablaHash[K, V]) unCuartoDeLaCapacidadActual() bool {
-	return th.ocupados <= int(float64(th.capacidad())*_FACTOR_CAPACIDAD_MINIMA)
-}
-
-func convertirABytes[K comparable](clave K) []byte {
-	return []byte(fmt.Sprintf("%v", clave))
-}
-
-// CODIGO FUENTE : https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-// USAMOS EL METODO FNV-HASHING
-func (th tablaHash[K, V]) hashingPosicion(clave K) int {
-	var (
-		base uint32 = 2166136261
-		dato uint32 = 16777619
-	)
-	arrayBytes := convertirABytes(clave)
-	for _, valor := range arrayBytes {
-		base ^= uint32(valor)
-		base *= dato
-	}
-	return int(base) % th.capacidad()
-}
-
-func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
-	capacidad := th.capacidad()
-	tablaAnterior := th.tabla
-	if aumentar {
-		capacidad *= _FACTOR_REDIMENCIONAR_CAPACIDAD
-	} else {
-		capacidad /= _FACTOR_REDIMENCIONAR_CAPACIDAD
-	}
-	th.tabla = crearTabla[K, V](capacidad)
-	th.borrados, th.ocupados = 0, 0
-	for i := 0; i < len(tablaAnterior); i++ {
-		if tablaAnterior[i].estado == _CASILLA_OCUPADA {
-			th.Guardar(tablaAnterior[i].clave, tablaAnterior[i].dato)
-		}
-	}
-}
-
 func (th *tablaHash[K, V]) Guardar(clave K, dato V) {
 	pos := th.buscarPosicion(clave)
 	if th.tabla[pos].clave == clave && th.tabla[pos].estado == _CASILLA_OCUPADA {
@@ -191,6 +139,58 @@ func (ieth iterExternoTablaHash[K, V]) Siguiente() {
 ****************************************************************
 */
 
+func (th tablaHash[K, V]) capacidad() int {
+	return cap(th.tabla)
+}
+
+func (th tablaHash[K, V]) cantidadMaximaRedimensionar() bool {
+	return (th.ocupados + th.borrados) >= int((float64(th.capacidad()) * _FACTOR_CAPACIDAD_MAXIMA))
+}
+
+func (th tablaHash[K, V]) capacidadAceptadaParaAchicar() bool {
+	return th.ocupados > _CAPACIDAD_INICIAL
+}
+
+func (th tablaHash[K, V]) unCuartoDeLaCapacidadActual() bool {
+	return th.ocupados <= int(float64(th.capacidad())*_FACTOR_CAPACIDAD_MINIMA)
+}
+
+func convertirABytes[K comparable](clave K) []byte {
+	return []byte(fmt.Sprintf("%v", clave))
+}
+
+// CODIGO FUENTE : https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+// USAMOS EL METODO FNV-HASHING
+func (th tablaHash[K, V]) hashingPosicion(clave K) int {
+	var (
+		base uint32 = 2166136261
+		dato uint32 = 16777619
+	)
+	arrayBytes := convertirABytes(clave)
+	for _, valor := range arrayBytes {
+		base ^= uint32(valor)
+		base *= dato
+	}
+	return int(base) % th.capacidad()
+}
+
+func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
+	capacidad := th.capacidad()
+	tablaAnterior := th.tabla
+	if aumentar {
+		capacidad *= _FACTOR_REDIMENCIONAR_CAPACIDAD
+	} else {
+		capacidad /= _FACTOR_REDIMENCIONAR_CAPACIDAD
+	}
+	th.tabla = crearTabla[K, V](capacidad)
+	th.borrados, th.ocupados = 0, 0
+	for i := 0; i < len(tablaAnterior); i++ {
+		if tablaAnterior[i].estado == _CASILLA_OCUPADA {
+			th.Guardar(tablaAnterior[i].clave, tablaAnterior[i].dato)
+		}
+	}
+}
+
 func (th tablaHash[K, V]) buscarPosicion(clave K) int {
 	pos := th.hashingPosicion(clave)
 	for i := pos; i < th.capacidad(); i++ {
@@ -206,3 +206,5 @@ func (th tablaHash[K, V]) buscarPosicion(clave K) int {
 	}
 	return pos
 }
+
+//*************************************************************************************
