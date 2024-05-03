@@ -193,12 +193,13 @@ func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
 
 func (th tablaHash[K, V]) buscarPosicion(clave K) int {
 	pos := th.hashingPosicion(clave)
-	for i := pos; i < th.capacidad(); i++ {
+	seguirBuscando := true
+	for i := pos; i < th.capacidad() && seguirBuscando; i++ {
 		if th.tabla[i].clave == clave && th.tabla[i].estado == _CASILLA_OCUPADA {
 			return i
 		} else if th.tabla[i].estado == _CASILLA_VACIA {
 			pos = i
-			break
+			seguirBuscando = false
 		}
 		if i == th.capacidad()-1 {
 			i = 0
