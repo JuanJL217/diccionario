@@ -29,8 +29,9 @@ type hashElemento[K comparable, V any] struct {
 }
 
 type iterExternoTablaHash[K comparable, V any] struct {
-	tabla    []hashElemento[K, V]
-	contador int
+	tablaIterar      *tablaHash[K, V]
+	posicion         int
+	contadorOcupados int
 }
 
 func crearTabla[K comparable, V any](capacidad int) []hashElemento[K, V] {
@@ -106,31 +107,31 @@ func (th *tablaHash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 ****************************************************************
 */
 
-func (th tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iterExternoTablaHash[K, V]{th.tabla, 0}
+func (th *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
+	return &iterExternoTablaHash[K, V]{tablaIterar: th}
 }
 
 func (ieth *iterExternoTablaHash[K, V]) HaySiguiente() bool {
-	estado := false
-	for ieth.contador < len(ieth.tabla) && !estado {
-		if ieth.tabla[ieth.contador].estado == _CASILLA_OCUPADA {
-			estado = true
-		}
-		ieth.contador++
-	}
-	return estado
+	return ieth.contadorOcupados < ieth.tablaIterar.ocupados
 }
 
-func (ieth iterExternoTablaHash[K, V]) VerActual() (K, V) {
-	if !ieth.HaySiguiente() {
-		panic(_PANIC_ITERADOR)
+func (ieth *iterExternoTablaHash[K, V]) VerActual() (K, V) {
+	for ieth.HaySiguiente() {
+		if ieth.tablaIterar.tabla[ieth.posicion].estado == _CASILLA_OCUPADA {
+			ieth.contadorOcupados++
+			return ieth.tablaIterar.tabla[ieth.posicion].clave, ieth.tablaIterar.tabla[ieth.posicion].dato
+		}
+		ieth.posicion++
 	}
-	return ieth.tabla[ieth.contador].clave, ieth.tabla[ieth.contador].dato
+
+	panic(_PANIC_ITERADOR)
 }
-func (ieth iterExternoTablaHash[K, V]) Siguiente() {
+
+func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
 	if !ieth.HaySiguiente() {
 		panic(_PANIC_ITERADOR)
 	}
+	ieth.posicion++
 }
 
 /*
