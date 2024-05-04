@@ -153,9 +153,6 @@ func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
 		panic(_PANIC_ITERADOR)
 	}
 	ieth.posicion++
-	//EL problema era aca , tipo vos en el actual aumentabas la cantidad de ocupados cuando encontraba un dato
-	//y eso se hace en el siguiente pq si pregunto "verActual" muchas veces entonces la cantidad de ocupados se iba
-	//hasta el tope y bueno si haces siguiente saltaria el panic
 	ieth.contadorOcupados++
 }
 
