@@ -42,6 +42,12 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &tablaHash[K, V]{tabla: crearTabla[K, V](_CAPACIDAD_INICIAL)}
 }
 
+/*
+****************************************************************
+-----------------PRIMITIVAS--------------------------
+****************************************************************
+*/
+
 func (th *tablaHash[K, V]) Guardar(clave K, dato V) {
 	pos := th.buscarPosicion(clave)
 	if th.tabla[pos].clave == clave && th.tabla[pos].estado == _CASILLA_OCUPADA {
@@ -88,10 +94,16 @@ func (th *tablaHash[K, V]) Cantidad() int {
 	return th.ocupados
 }
 
+/*
+****************************************************************
+-----------------ITERADOR INTERNO--------------------------
+****************************************************************
+*/
+
 func (th *tablaHash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 	seguirIterando := true
 	pos := 0
-	for pos < th.capacidad() && seguirIterando {
+	for pos < cap(th.tabla) && seguirIterando {
 		if th.tabla[pos].estado == _CASILLA_OCUPADA {
 			if !visitar(th.tabla[pos].clave, th.tabla[pos].dato) {
 				seguirIterando = false
@@ -99,6 +111,7 @@ func (th *tablaHash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 		}
 		pos++
 	}
+
 }
 
 /*
@@ -116,15 +129,23 @@ func (ieth *iterExternoTablaHash[K, V]) HaySiguiente() bool {
 }
 
 func (ieth *iterExternoTablaHash[K, V]) VerActual() (K, V) {
-	for ieth.HaySiguiente() {
-		if ieth.tablaIterar.tabla[ieth.posicion].estado == _CASILLA_OCUPADA {
-			ieth.contadorOcupados++
-			return ieth.tablaIterar.tabla[ieth.posicion].clave, ieth.tablaIterar.tabla[ieth.posicion].dato
-		}
-		ieth.posicion++
+	if !ieth.HaySiguiente() {
+		panic(_PANIC_ITERADOR)
 	}
-
-	panic(_PANIC_ITERADOR)
+	var (
+		clave  K
+		valor  V
+		estado bool
+	)
+	for ieth.HaySiguiente() && !estado {
+		if ieth.tablaIterar.tabla[ieth.posicion].estado == _CASILLA_OCUPADA {
+			clave, valor = ieth.tablaIterar.tabla[ieth.posicion].clave, ieth.tablaIterar.tabla[ieth.posicion].dato
+			estado = true
+		} else {
+			ieth.posicion++
+		}
+	}
+	return clave, valor
 }
 
 func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
@@ -132,6 +153,10 @@ func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
 		panic(_PANIC_ITERADOR)
 	}
 	ieth.posicion++
+	//EL problema era aca , tipo vos en el actual aumentabas la cantidad de ocupados cuando encontraba un dato
+	//y eso se hace en el siguiente pq si pregunto "verActual" muchas veces entonces la cantidad de ocupados se iba
+	//hasta el tope y bueno si haces siguiente saltaria el panic
+	ieth.contadorOcupados++
 }
 
 /*
@@ -140,12 +165,8 @@ func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
 ****************************************************************
 */
 
-func (th tablaHash[K, V]) capacidad() int {
-	return cap(th.tabla)
-}
-
 func (th tablaHash[K, V]) cantidadMaximaRedimensionar() bool {
-	return (th.ocupados + th.borrados) >= int((float64(th.capacidad()) * _FACTOR_CAPACIDAD_MAXIMA))
+	return (th.ocupados + th.borrados) >= int(float64(cap(th.tabla))*_FACTOR_CAPACIDAD_MAXIMA)
 }
 
 func (th tablaHash[K, V]) capacidadAceptadaParaAchicar() bool {
@@ -153,7 +174,7 @@ func (th tablaHash[K, V]) capacidadAceptadaParaAchicar() bool {
 }
 
 func (th tablaHash[K, V]) unCuartoDeLaCapacidadActual() bool {
-	return th.ocupados <= int(float64(th.capacidad())*_FACTOR_CAPACIDAD_MINIMA)
+	return th.ocupados <= int(float64(cap(th.tabla))*_FACTOR_CAPACIDAD_MINIMA)
 }
 
 func convertirABytes[K comparable](clave K) []byte {
@@ -172,11 +193,11 @@ func (th tablaHash[K, V]) hashingPosicion(clave K) int {
 		base ^= uint32(valor)
 		base *= dato
 	}
-	return int(base) % th.capacidad()
+	return int(base) % cap(th.tabla)
 }
 
 func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
-	capacidad := th.capacidad()
+	capacidad := cap(th.tabla)
 	tablaAnterior := th.tabla
 	if aumentar {
 		capacidad *= _FACTOR_REDIMENCIONAR_CAPACIDAD
@@ -195,14 +216,14 @@ func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
 func (th tablaHash[K, V]) buscarPosicion(clave K) int {
 	pos := th.hashingPosicion(clave)
 	seguirBuscando := true
-	for i := pos; i < th.capacidad() && seguirBuscando; i++ {
+	for i := pos; i < cap(th.tabla) && seguirBuscando; i++ {
 		if th.tabla[i].clave == clave && th.tabla[i].estado == _CASILLA_OCUPADA {
 			return i
 		} else if th.tabla[i].estado == _CASILLA_VACIA {
 			pos = i
 			seguirBuscando = false
 		}
-		if i == th.capacidad()-1 {
+		if i == cap(th.tabla)-1 {
 			i = 0
 		}
 	}
