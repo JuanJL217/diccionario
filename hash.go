@@ -5,81 +5,88 @@ import (
 )
 
 const (
-	_CASILLA_VACIA                  int     = 0
-	_CASILLA_OCUPADA                int     = 1
-	_CLAVE_BORRADA                  int     = 2
-	_CAPACIDAD_INICIAL              int     = 20
-	_FACTOR_REDIMENCIONAR_CAPACIDAD int     = 2
-	_FACTOR_CAPACIDAD_MAXIMA        float64 = 0.75
-	_FACTOR_CAPACIDAD_MINIMA        float64 = 0.25
-	_PANIC_CLAVE_DICCIONARIO        string  = "La clave no pertenece al diccionario"
-	_PANIC_ITERADOR                         = "El iterador termino de iterar"
+	_CASILLA_VACIA                  = 0
+	_CASILLA_OCUPADA                = 1
+	_CLAVE_BORRADA                  = 2
+	_CAPACIDAD_INICIAL              = 19
+	_FACTOR_REDIMENCIONAR_CAPACIDAD = 2
+	_FACTOR_CAPACIDAD_MAXIMA        = 0.75
+	_FACTOR_CAPACIDAD_MINIMA        = 0.25
+	_PANIC_CLAVE_DICCIONARIO        = "La clave no pertenece al diccionario"
+	_PANIC_ITERADOR                 = "El iterador termino de iterar"
 )
 
-type tablaHash[K comparable, V any] struct {
+type hashCerrado[K comparable, V any] struct {
+	tabla    []celdaHash[K, V]
 	ocupados int
 	borrados int
-	tabla    []hashElemento[K, V]
+	tam      int
 }
 
-type hashElemento[K comparable, V any] struct {
+type celdaHash[K comparable, V any] struct {
 	clave  K
 	dato   V
 	estado int
 }
 
-type iterExternoTablaHash[K comparable, V any] struct {
-	tablaIterar      *tablaHash[K, V]
+type iterTablaHash[K comparable, V any] struct {
+	tablaIterar      *hashCerrado[K, V]
 	posicion         int
 	contadorOcupados int
 }
 
-func crearTabla[K comparable, V any](capacidad int) []hashElemento[K, V] {
-	return make([]hashElemento[K, V], capacidad)
-}
+/*
+****************************************************************
+-----------------FUNCION DE CREACION DEL TDA--------------------
+****************************************************************
+*/
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
-	return &tablaHash[K, V]{tabla: crearTabla[K, V](_CAPACIDAD_INICIAL)}
+	return crearTabla[K, V](_CAPACIDAD_INICIAL)
+}
+func crearTabla[K comparable, V any](capacidad int) *hashCerrado[K, V] {
+	// Crea la tabla con dicho tamanio
+	return &hashCerrado[K, V]{tabla: make([]celdaHash[K, V], capacidad), tam: capacidad}
 }
 
 /*
 ****************************************************************
------------------PRIMITIVAS--------------------------
+-----------------PRIMITIVAS DEL TDA-----------------------------
 ****************************************************************
 */
 
-func (th *tablaHash[K, V]) Guardar(clave K, dato V) {
-	pos := th.buscarPosicion(clave)
-	if th.tabla[pos].clave == clave && th.tabla[pos].estado == _CASILLA_OCUPADA {
-		th.tabla[pos].dato = dato
-	} else {
+func (th *hashCerrado[K, V]) Guardar(clave K, dato V) {
+	pos, estado := th.buscarPosicion(clave)
+	if estado == _CASILLA_OCUPADA {
+		th.tabla[pos].clave, th.tabla[pos].dato = clave, dato
+	} else if estado == _CASILLA_VACIA {
 		th.tabla[pos].clave, th.tabla[pos].dato, th.tabla[pos].estado = clave, dato, _CASILLA_OCUPADA
 		th.ocupados++
 	}
-	if th.cantidadMaximaRedimensionar() {
-		th.redimensionar(true)
+	if th.verCapacidadAumentar() {
+		th.nuevaTabla(th.tam * _FACTOR_REDIMENCIONAR_CAPACIDAD)
 	}
 }
 
-func (th *tablaHash[K, V]) Pertenece(clave K) bool {
-	pos := th.buscarPosicion(clave)
+func (th *hashCerrado[K, V]) Pertenece(clave K) bool {
+	pos, _ := th.buscarPosicion(clave)
 	return th.tabla[pos].estado == _CASILLA_OCUPADA && th.tabla[pos].clave == clave
 }
 
-func (th *tablaHash[K, V]) Obtener(clave K) V {
-	pos := th.buscarPosicion(clave)
-	if th.tabla[pos].estado == _CASILLA_VACIA {
+func (th *hashCerrado[K, V]) Obtener(clave K) V {
+	pos, estado := th.buscarPosicion(clave)
+	if estado == _CASILLA_VACIA {
 		panic(_PANIC_CLAVE_DICCIONARIO)
 	}
 	return th.tabla[pos].dato
 }
 
-func (th *tablaHash[K, V]) Borrar(clave K) V {
-	if th.capacidadAceptadaParaAchicar() && th.unCuartoDeLaCapacidadActual() {
-		th.redimensionar(false)
+func (th *hashCerrado[K, V]) Borrar(clave K) V {
+	if th.verCapacidadDisminuir() {
+		th.nuevaTabla(th.tam / _FACTOR_REDIMENCIONAR_CAPACIDAD)
 	}
-	pos := th.buscarPosicion(clave)
-	if th.tabla[pos].estado == _CASILLA_VACIA {
+	pos, estado := th.buscarPosicion(clave)
+	if estado == _CASILLA_VACIA {
 		panic(_PANIC_CLAVE_DICCIONARIO)
 	}
 	if th.tabla[pos].clave == clave {
@@ -90,97 +97,142 @@ func (th *tablaHash[K, V]) Borrar(clave K) V {
 	return th.tabla[pos].dato
 }
 
-func (th *tablaHash[K, V]) Cantidad() int {
+func (th hashCerrado[K, V]) Cantidad() int {
 	return th.ocupados
 }
 
 /*
 ****************************************************************
------------------ITERADOR INTERNO--------------------------
+-----------------ITERADOR INTERNO-------------------------------
 ****************************************************************
 */
 
-func (th *tablaHash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
-	seguirIterando := true
-	pos := 0
-	for pos < cap(th.tabla) && seguirIterando {
-		if th.tabla[pos].estado == _CASILLA_OCUPADA {
-			if !visitar(th.tabla[pos].clave, th.tabla[pos].dato) {
-				seguirIterando = false
-			}
-		}
-		pos++
-	}
-
-}
-
-/*
-****************************************************************
------------------ITERADOR EXTERNO--------------------------
-****************************************************************
-*/
-
-func (th *tablaHash[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iterExternoTablaHash[K, V]{tablaIterar: th}
-}
-
-func (ieth *iterExternoTablaHash[K, V]) HaySiguiente() bool {
-	return ieth.contadorOcupados < ieth.tablaIterar.ocupados
-}
-
-func (ieth *iterExternoTablaHash[K, V]) VerActual() (K, V) {
-	if !ieth.HaySiguiente() {
-		panic(_PANIC_ITERADOR)
-	}
-	var (
-		clave  K
-		valor  V
-		estado bool
-	)
-	for ieth.HaySiguiente() && !estado {
-		if ieth.tablaIterar.tabla[ieth.posicion].estado == _CASILLA_OCUPADA {
-			clave, valor = ieth.tablaIterar.tabla[ieth.posicion].clave, ieth.tablaIterar.tabla[ieth.posicion].dato
+func (th hashCerrado[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	iter := new(iterTablaHash[K, V])
+	iter.tablaIterar = &th
+	var estado bool
+	for iter.buscarOcupados() && !estado {
+		if !visitar(th.tabla[iter.posicion].clave, th.tabla[iter.posicion].dato) {
 			estado = true
 		} else {
-			ieth.posicion++
+			iter.contadorOcupados++
+			iter.posicion++
 		}
 	}
-	return clave, valor
-}
 
-func (ieth *iterExternoTablaHash[K, V]) Siguiente() {
-	if !ieth.HaySiguiente() {
-		panic(_PANIC_ITERADOR)
-	}
-	ieth.posicion++
-	ieth.contadorOcupados++
 }
 
 /*
 ****************************************************************
------------------FUNCIONES AUXILIARES--------------------------
+-----------------ITERADOR EXTERNO-------------------------------
 ****************************************************************
 */
 
-func (th tablaHash[K, V]) cantidadMaximaRedimensionar() bool {
-	return (th.ocupados + th.borrados) >= int(float64(cap(th.tabla))*_FACTOR_CAPACIDAD_MAXIMA)
+func (th *hashCerrado[K, V]) Iterador() IterDiccionario[K, V] {
+	iter := new(iterTablaHash[K, V])
+	iter.tablaIterar = th
+	iter.buscarOcupados()
+	return iter
 }
 
-func (th tablaHash[K, V]) capacidadAceptadaParaAchicar() bool {
-	return th.ocupados > _CAPACIDAD_INICIAL
+func (i *iterTablaHash[K, V]) HaySiguiente() bool {
+	return i.contadorOcupados < i.tablaIterar.ocupados
 }
 
-func (th tablaHash[K, V]) unCuartoDeLaCapacidadActual() bool {
-	return th.ocupados <= int(float64(cap(th.tabla))*_FACTOR_CAPACIDAD_MINIMA)
+func (i *iterTablaHash[K, V]) VerActual() (K, V) {
+	if !i.HaySiguiente() {
+		panic(_PANIC_ITERADOR)
+	}
+	return i.tablaIterar.tabla[i.posicion].clave, i.tablaIterar.tabla[i.posicion].dato
 }
 
+func (i *iterTablaHash[K, V]) Siguiente() {
+	if !i.HaySiguiente() {
+		panic(_PANIC_ITERADOR)
+	}
+	i.posicion++
+	i.contadorOcupados++
+	i.buscarOcupados()
+}
+
+/*
+****************************************************************
+-----------------METODOS AUXILIARES INTERNOS--------------------
+****************************************************************
+*/
+
+func (th hashCerrado[K, V]) buscarPosicion(clave K) (int, int) {
+	// Busca la casilla de la clave para las primitivas
+	// Guardar,Borrar,Pertenece,Obtener
+	// Devuelve la posicion y el estado de la casilla
+	pos := hashing(clave, th.tam)
+	for pos < th.tam {
+		if th.tabla[pos].clave == clave && th.tabla[pos].estado == _CASILLA_OCUPADA {
+			return pos, _CASILLA_OCUPADA
+		}
+		if th.tabla[pos].estado == _CASILLA_VACIA {
+			return pos, _CASILLA_VACIA
+		}
+		if pos == th.tam-1 {
+			pos = 0
+		}
+		pos++
+
+	}
+	return pos, _CLAVE_BORRADA
+}
+
+func (i *iterTablaHash[K, V]) buscarOcupados() bool {
+	// Buscamos la celda que tenga un estado "ocupado"
+	var estado bool
+	for i.posicion < i.tablaIterar.tam && i.contadorOcupados < i.tablaIterar.ocupados && !estado {
+		if i.tablaIterar.tabla[i.posicion].estado == _CASILLA_OCUPADA {
+			estado = true
+		} else {
+			i.posicion++
+		}
+	}
+	return estado
+}
+
+func (th *hashCerrado[K, V]) verCapacidadAumentar() bool {
+	// Si los elementos (ocupados + borrados) ocupan un 75% de la tabla, Aumentamos el tamanio de la tabla
+	return (th.ocupados + th.borrados) >= int(float64(th.tam)*_FACTOR_CAPACIDAD_MAXIMA)
+}
+
+func (th *hashCerrado[K, V]) verCapacidadDisminuir() bool {
+	// Si los elementos ocupados ocupan un 25% de la tabla, Disminuimos la tabla siempre y cuando los ocupados sean mayores a la CAPACIDAD_INICIAL
+	return th.ocupados <= int(float64(th.tam)*_FACTOR_CAPACIDAD_MINIMA) && th.ocupados > _CAPACIDAD_INICIAL
+}
+func (th *hashCerrado[K, V]) nuevaTabla(tamanio int) {
+	// Creamos una nueva tabla para la redimension
+	nuevo := crearTabla[K, V](tamanio)
+	iter := new(iterTablaHash[K, V])
+	iter.tablaIterar = th
+	for iter.buscarOcupados() {
+		nuevo.Guardar(th.tabla[iter.posicion].clave, th.tabla[iter.posicion].dato)
+		iter.posicion++
+		iter.contadorOcupados++
+	}
+	th.tabla = nuevo.tabla
+	th.ocupados = nuevo.ocupados
+	th.borrados = nuevo.borrados
+	th.tam = nuevo.tam
+
+}
+
+/*
+****************************************************************
+-----------------FUNCIONES AUXILIARES---------------------------
+****************************************************************
+*/
 func convertirABytes[K comparable](clave K) []byte {
 	return []byte(fmt.Sprintf("%v", clave))
 }
 
 // CODIGO FUENTE : https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 // USAMOS EL METODO FNV-HASHING
-func (th tablaHash[K, V]) hashingPosicion(clave K) int {
+func hashing[K comparable](clave K, tamanio int) int {
 	var (
 		base uint32 = 2166136261
 		dato uint32 = 16777619
@@ -190,41 +242,5 @@ func (th tablaHash[K, V]) hashingPosicion(clave K) int {
 		base ^= uint32(valor)
 		base *= dato
 	}
-	return int(base) % cap(th.tabla)
+	return int(base) % tamanio
 }
-
-func (th *tablaHash[K, V]) redimensionar(aumentar bool) {
-	capacidad := cap(th.tabla)
-	tablaAnterior := th.tabla
-	if aumentar {
-		capacidad *= _FACTOR_REDIMENCIONAR_CAPACIDAD
-	} else {
-		capacidad /= _FACTOR_REDIMENCIONAR_CAPACIDAD
-	}
-	th.tabla = crearTabla[K, V](capacidad)
-	th.borrados, th.ocupados = 0, 0
-	for i := 0; i < len(tablaAnterior); i++ {
-		if tablaAnterior[i].estado == _CASILLA_OCUPADA {
-			th.Guardar(tablaAnterior[i].clave, tablaAnterior[i].dato)
-		}
-	}
-}
-
-func (th tablaHash[K, V]) buscarPosicion(clave K) int {
-	pos := th.hashingPosicion(clave)
-	seguirBuscando := true
-	for i := pos; i < cap(th.tabla) && seguirBuscando; i++ {
-		if th.tabla[i].clave == clave && th.tabla[i].estado == _CASILLA_OCUPADA {
-			return i
-		} else if th.tabla[i].estado == _CASILLA_VACIA {
-			pos = i
-			seguirBuscando = false
-		}
-		if i == cap(th.tabla)-1 {
-			i = 0
-		}
-	}
-	return pos
-}
-
-//*************************************************************************************
