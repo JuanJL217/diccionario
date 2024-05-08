@@ -41,6 +41,13 @@ func (arbol *abb[K, V]) Guardar(clave K, dato V) {
 	}
 }
 
+func (arbol *abb[K, V]) Pertenece(clave K) bool {
+	actual, padre := arbol.buscarNodo(clave, arbol.raiz, nil)
+	if padre != nil || (padre == nil && actual != nil) { //Si existe padre o si padre no existe y existe un actual (significa que apunta a la raiz)
+		return true
+	} // falta completar, yo me encargo
+}
+
 func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual *nodoABB[K, V], padre *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) {
 	if nodoActual == nil {
 		return nil, padre
@@ -53,3 +60,5 @@ func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual *nodoABB[K, V], padre *no
 		return arbol.buscarNodo(clave, nodoActual.derecho, nodoActual)
 	}
 }
+
+// Ayudame con los iteradores :'v
