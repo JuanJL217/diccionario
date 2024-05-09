@@ -15,7 +15,7 @@ type abb[K comparable, V any] struct {
 	cmp      funcCmp[K] // porque devuelve menor, igual o mayor a 0
 }
 
-func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccinarioOrdenado[K, V] {
+func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
 	return &abb[K, V]{nil, 0, funcion_cmp}
 }
 
@@ -48,6 +48,34 @@ func (arbol *abb[K, V]) Pertenece(clave K) bool {
 	} // falta completar, yo me encargo
 }
 
+func (arbol abb[K, V]) Cantidad() int {
+	return arbol.cantidad
+}
+
+func (arbol *abb[K, V]) Obtener(clave K) V {
+
+}
+func (arbol *abb[K, V]) Borrar(clave K) V {
+
+}
+
+func (arbol abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+
+}
+
+func (arbol *abb[K, V]) Iterador() IterDiccionario[K, V] {
+}
+
+// --ITERADOR RANGO---//
+func (arbol abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+
+}
+
+func (arbol abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+
+}
+
+// ---METODOS AUXILIARES INTERNOS---//
 func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual *nodoABB[K, V], padre *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) {
 	if nodoActual == nil {
 		return nil, padre
