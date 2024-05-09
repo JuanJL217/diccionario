@@ -12,7 +12,7 @@ const (
 	_FACTOR_REDIMENCIONAR_CAPACIDAD = 2
 	_FACTOR_CAPACIDAD_MAXIMA        = 0.75
 	_FACTOR_CAPACIDAD_MINIMA        = 0.25
-	_PANIC_ITERADOR                 = "El iterador termino de iterar"
+	PANIC_ITERADOR                  = "El iterador termino de iterar"
 	PANIC_CLAVE_DICCIONARIO         = "La clave no pertenece al diccionario"
 )
 
@@ -141,14 +141,14 @@ func (i *iterTablaHash[K, V]) HaySiguiente() bool {
 
 func (i *iterTablaHash[K, V]) VerActual() (K, V) {
 	if !i.HaySiguiente() {
-		panic(_PANIC_ITERADOR)
+		panic(PANIC_ITERADOR)
 	}
 	return i.tablaIterar.tabla[i.posicion].clave, i.tablaIterar.tabla[i.posicion].dato
 }
 
 func (i *iterTablaHash[K, V]) Siguiente() {
 	if !i.HaySiguiente() {
-		panic(_PANIC_ITERADOR)
+		panic(PANIC_ITERADOR)
 	}
 	i.posicion++
 	i.contadorOcupados++
