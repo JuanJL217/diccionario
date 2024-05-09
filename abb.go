@@ -1,5 +1,7 @@
 package diccionario
 
+const _VALOR_NULO int = 0
+
 type nodoABB[K comparable, V any] struct {
 	izquierdo *nodoABB[K, V]
 	derecho   *nodoABB[K, V]
@@ -46,10 +48,6 @@ func (arbol *abb[K, V]) Pertenece(clave K) bool {
 	return actual != nil
 }
 
-func (arbol abb[K, V]) Cantidad() int {
-	return arbol.cantidad
-}
-
 func (arbol *abb[K, V]) Obtener(clave K) V {
 	actual, _ := arbol.buscarNodo(clave, arbol.raiz, nil)
 	if actual == nil {
@@ -57,8 +55,29 @@ func (arbol *abb[K, V]) Obtener(clave K) V {
 	}
 	return actual.dato
 }
-func (arbol *abb[K, V]) Borrar(clave K) V {
 
+func (arbol *abb[K, V]) Borrar(clave K) V {
+	actual, padre := arbol.buscarNodo(clave, arbol.raiz, nil)
+	if actual == nil {
+		panic(PANIC_CLAVE_DICCIONARIO)
+	}
+	dato := actual.dato
+	valorComparativo := arbol.cmp(actual.clave, padre.clave) // Me dice si está a la izquierda o derecha del padre
+	if actual.izquierdo == nil && actual.derecho == nil {
+		arbol.borrarConCeroHijos(valorComparativo, actual, padre)
+	} else if actual.izquierdo != nil && actual.derecho == nil {
+		arbol.borrarConUnHijo(valorComparativo, true, actual, padre)
+	} else if actual.izquierdo == nil && actual.derecho != nil {
+		arbol.borrarConUnHijo(valorComparativo, false, actual, padre)
+	} else {
+		arbol.borrarConDosHijos(valorComparativo, actual, padre)
+	}
+	arbol.cantidad--
+	return dato
+}
+
+func (arbol abb[K, V]) Cantidad() int {
+	return arbol.cantidad
 }
 
 func (arbol abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
@@ -78,7 +97,68 @@ func (arbol abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 }
 
 // ---METODOS AUXILIARES INTERNOS---//
-func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual *nodoABB[K, V], padre *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) {
+func (arbol *abb[K, V]) borrarConCeroHijos(diferencia int, nodoActual, padre *nodoABB[K, V]) {
+	if nodoActual == arbol.raiz {
+		arbol.raiz = nil
+	} else {
+		if diferencia < _VALOR_NULO {
+			padre.izquierdo = nil
+		} else {
+			padre.derecho = nil
+		}
+	}
+}
+
+func (arbol *abb[K, V]) borrarConUnHijo(diferencia int, ladoIzquierdo bool, nodoActual, padre *nodoABB[K, V]) {
+	if ladoIzquierdo {
+		if nodoActual == arbol.raiz {
+			arbol.raiz = nodoActual.izquierdo
+		} else {
+			if diferencia < _VALOR_NULO {
+				padre.izquierdo = nodoActual.izquierdo
+			} else {
+				padre.derecho = nodoActual.izquierdo
+			}
+		}
+	} else {
+		if nodoActual == arbol.raiz {
+			arbol.raiz = nodoActual.derecho
+		} else {
+			if diferencia < _VALOR_NULO {
+				padre.izquierdo = nodoActual.derecho
+			} else {
+				padre.derecho = nodoActual.derecho
+			}
+		}
+	}
+}
+
+func reemplazante[K comparable, V any](nodoInvocado *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) { //Haremos el más derecho del nodo izquierdo del que uqeremos borrar
+	padre := nodoInvocado
+	nodoActual := nodoInvocado.derecho
+	if nodoActual.derecho == nil {
+		return nodoActual, padre
+	}
+	return reemplazante(nodoActual)
+}
+
+func (arbol *abb[K, V]) borrarConDosHijos(diferencia int, nodoActual, padre *nodoABB[K, V]) {
+	reemplazo, padreDelReemplazo := reemplazante(nodoActual.izquierdo)
+	padreDelReemplazo.derecho = reemplazo.izquierdo
+	if nodoActual == arbol.raiz {
+		arbol.raiz = reemplazo
+	} else {
+		if diferencia < _VALOR_NULO {
+			padre.izquierdo = reemplazo
+		} else {
+			padre.derecho = reemplazo
+		}
+	}
+	reemplazo.izquierdo = nodoActual.izquierdo
+	reemplazo.derecho = nodoActual.derecho
+}
+
+func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual, padre *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) {
 	if nodoActual == nil {
 		return nil, padre
 	}
@@ -90,5 +170,3 @@ func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual *nodoABB[K, V], padre *no
 		return arbol.buscarNodo(clave, nodoActual.derecho, nodoActual)
 	}
 }
-
-// Ayudame con los iteradores :'v
