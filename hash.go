@@ -12,8 +12,8 @@ const (
 	_FACTOR_REDIMENCIONAR_CAPACIDAD = 2
 	_FACTOR_CAPACIDAD_MAXIMA        = 0.75
 	_FACTOR_CAPACIDAD_MINIMA        = 0.25
-	_PANIC_CLAVE_DICCIONARIO        = "La clave no pertenece al diccionario"
 	_PANIC_ITERADOR                 = "El iterador termino de iterar"
+	PANIC_CLAVE_DICCIONARIO         = "La clave no pertenece al diccionario"
 )
 
 type hashCerrado[K comparable, V any] struct {
@@ -76,7 +76,7 @@ func (th *hashCerrado[K, V]) Pertenece(clave K) bool {
 func (th *hashCerrado[K, V]) Obtener(clave K) V {
 	pos, estado := th.buscarPosicion(clave)
 	if estado == _CASILLA_VACIA {
-		panic(_PANIC_CLAVE_DICCIONARIO)
+		panic(PANIC_CLAVE_DICCIONARIO)
 	}
 	return th.tabla[pos].dato
 }
@@ -87,7 +87,7 @@ func (th *hashCerrado[K, V]) Borrar(clave K) V {
 	}
 	pos, estado := th.buscarPosicion(clave)
 	if estado == _CASILLA_VACIA {
-		panic(_PANIC_CLAVE_DICCIONARIO)
+		panic(PANIC_CLAVE_DICCIONARIO)
 	}
 	if th.tabla[pos].clave == clave {
 		th.tabla[pos].estado = _CLAVE_BORRADA

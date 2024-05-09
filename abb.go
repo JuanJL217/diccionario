@@ -25,7 +25,7 @@ func crearNodo[K comparable, V any](clave K, dato V) *nodoABB[K, V] {
 
 func (arbol *abb[K, V]) Guardar(clave K, dato V) {
 	nuevoNodo := crearNodo(clave, dato)
-	actual, padre := arbol.buscarNodo(clave, arbol.raiz, nil) // pongo nil, porque antes de la raiz, no hay nada
+	actual, padre := arbol.buscarNodo(clave, arbol.raiz, nil)
 	if actual == nil && padre == nil {
 		arbol.raiz = nuevoNodo
 		arbol.cantidad++
@@ -42,10 +42,8 @@ func (arbol *abb[K, V]) Guardar(clave K, dato V) {
 }
 
 func (arbol *abb[K, V]) Pertenece(clave K) bool {
-	actual, padre := arbol.buscarNodo(clave, arbol.raiz, nil)
-	if padre != nil || (padre == nil && actual != nil) { //Si existe padre o si padre no existe y existe un actual (significa que apunta a la raiz)
-		return true
-	} // falta completar, yo me encargo
+	actual, _ := arbol.buscarNodo(clave, arbol.raiz, nil)
+	return actual != nil
 }
 
 func (arbol abb[K, V]) Cantidad() int {
@@ -53,7 +51,11 @@ func (arbol abb[K, V]) Cantidad() int {
 }
 
 func (arbol *abb[K, V]) Obtener(clave K) V {
-
+	actual, _ := arbol.buscarNodo(clave, arbol.raiz, nil)
+	if actual == nil {
+		panic(PANIC_CLAVE_DICCIONARIO)
+	}
+	return actual.dato
 }
 func (arbol *abb[K, V]) Borrar(clave K) V {
 
