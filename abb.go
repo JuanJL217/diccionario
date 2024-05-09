@@ -1,5 +1,7 @@
 package diccionario
 
+import TDAPila "tdas/pila"
+
 const _VALOR_NULO int = 0
 
 type nodoABB[K comparable, V any] struct {
@@ -81,19 +83,52 @@ func (arbol abb[K, V]) Cantidad() int {
 }
 
 func (arbol abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
-
+	arbol.IterarRango(nil, nil, visitar)
 }
 
 func (arbol *abb[K, V]) Iterador() IterDiccionario[K, V] {
+	return arbol.IteradorRango(nil, nil)
 }
 
 // --ITERADOR RANGO---//
+
+type iteradorRangoABB[K comparable, V any] struct {
+	arbolIterar *abb[K, V]
+	pila        TDAPila.Pila[*nodoABB[K, V]]
+	inicio      *K
+	fin         *K
+}
+
 func (arbol abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
 
 }
 
-func (arbol abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+func (arbol *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+	return &iteradorRangoABB[K, V]{arbol, TDAPila.CrearPilaDinamica[*nodoABB[K, V]](), desde, hasta}
+}
 
+func (iterABB *iteradorRangoABB[K, V]) HaySiguiente() bool {
+	return iterABB.pila.EstaVacia()
+}
+
+// Siguiente implements IterDiccionario.
+func (iterABB *iteradorRangoABB[K, V]) Siguiente() {
+	if !iterABB.HaySiguiente() {
+		panic(PANIC_ITERADOR)
+	}
+	nodoActual := iterABB.pila.Desapilar()
+	if nodoActual.derecho != nil {
+
+	}
+
+}
+
+// VerActual implements IterDiccionario.
+func (iterABB *iteradorRangoABB[K, V]) VerActual() (K, V) {
+	panic("unimplemented")
+}
+
+func (iterABB iteradorRangoABB[K, V]) iteradorRango() {
 }
 
 // ---METODOS AUXILIARES INTERNOS---//
