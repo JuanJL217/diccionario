@@ -99,10 +99,12 @@ type iteradorRangoABB[K comparable, V any] struct {
 	fin         *K
 }
 
+// --ITERADOR RANGO INTERNO--//
 func (arbol abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
 
 }
 
+// -- ITERADOR RANGO EXTERNO
 func (arbol *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 	return &iteradorRangoABB[K, V]{arbol, TDAPila.CrearPilaDinamica[*nodoABB[K, V]](), desde, hasta}
 }
@@ -125,10 +127,20 @@ func (iterABB *iteradorRangoABB[K, V]) Siguiente() {
 
 // VerActual implements IterDiccionario.
 func (iterABB *iteradorRangoABB[K, V]) VerActual() (K, V) {
-	panic("unimplemented")
+	if !iterABB.HaySiguiente() {
+		panic(PANIC_ITERADOR)
+	}
+	return iterABB.pila.VerTope().clave, iterABB.pila.VerTope().dato
 }
 
-func (iterABB iteradorRangoABB[K, V]) iteradorRango() {
+func (iterABB *iteradorRangoABB[K, V]) iteradorRango(actual *nodoABB[K, V]) {
+	// if iterABB.arbolIterar.cmp(actual.clave, *iterABB.inicio) >= 0 && iterABB.arbolIterar.cmp(actual.clave, *iterABB.fin) <= 0 && actual.izquierdo == nil && actual.derecho == nil {
+	// 	iterABB.pila.Apilar(actual)
+	// }
+	// if iterABB.arbolIterar.cmp(*iterABB.inicio, actual.izquierdo.clave) > 0 {
+
+	// }
+	// ignora esto :v, me gana este tda
 }
 
 // ---METODOS AUXILIARES INTERNOS---//
