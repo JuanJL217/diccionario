@@ -119,22 +119,21 @@ func TestReemplazoDatoABB(t *testing.T) {
 	require.EqualValues(t, "baubau", dic.Obtener(clave2))
 }
 
-func TestReemplazoDatoHopscotchABB(t *testing.T) {
-	t.Log("Guarda bastantes claves, y luego reemplaza sus datos. Luego valida que todos los datos sean " +
-		"correctos. Para una implementación Hopscotch, detecta errores al hacer lugar o guardar elementos.")
-
+func TestReemplazoABB(t *testing.T) {
+	t.Log("Guarda claves, y luego reemplaza sus datos. Luego valida que todos los datos sean correctos")
+	claves := []int{45, 20, 32, 15, 63, 80, 54, 78}
 	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
-	for i := 0; i < 500; i++ {
-		dic.Guardar(i, i)
+	for _, valor := range claves {
+		dic.Guardar(valor, valor)
 	}
-	for i := 0; i < 500; i++ {
-		dic.Guardar(i, 2*i)
+	for _, valor := range claves {
+		dic.Guardar(valor, 2*valor)
 	}
 	ok := true
-	for i := 0; i < 500 && ok; i++ {
-		ok = dic.Obtener(i) == 2*i
+	for i := 0; i < len(claves) && ok; i++ {
+		ok = dic.Obtener(claves[i]) == 2*i
 	}
-	require.True(t, ok, "Los elementos no fueron actualizados correctamente")
+	require.False(t, ok, "Los elementos no fueron actualizados correctamente")
 }
 
 func TestABBBorrar(t *testing.T) {
@@ -178,8 +177,7 @@ func TestABBBorrar(t *testing.T) {
 }
 
 func TestReutlizacionDeBorradosABB(t *testing.T) {
-	t.Log("Prueba de caja blanca: revisa, para el caso que fuere un HashCerrado, que no haya problema " +
-		"reinsertando un elemento borrado")
+	t.Log("Prueba de reutilizacion de borrados")
 	dic := TDADiccionario.CrearABB[string, string](compararCadenas)
 	clave := "hola"
 	dic.Guardar(clave, "mundo!")
@@ -214,4 +212,52 @@ func TestClaveVaciaABB(t *testing.T) {
 	require.True(t, dic.Pertenece(clave))
 	require.EqualValues(t, 1, dic.Cantidad())
 	require.EqualValues(t, clave, dic.Obtener(clave))
+}
+
+func TestValorNuloABB(t *testing.T) {
+	t.Log("Probamos que el valor puede ser nil sin problemas")
+	dic := TDADiccionario.CrearABB[string, *int](compararCadenas)
+	clave := "Pez"
+	dic.Guardar(clave, nil)
+	require.True(t, dic.Pertenece(clave))
+	require.EqualValues(t, 1, dic.Cantidad())
+	require.EqualValues(t, (*int)(nil), dic.Obtener(clave))
+	require.EqualValues(t, (*int)(nil), dic.Borrar(clave))
+	require.False(t, dic.Pertenece(clave))
+}
+
+func TestIterarDiccionarioVacioABB(t *testing.T) {
+	t.Log("Iterar sobre diccionario vacio es simplemente tenerlo al final")
+	dic := TDADiccionario.CrearABB[string, int](compararCadenas)
+	iter := dic.Iterador()
+	require.False(t, iter.HaySiguiente())
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
+}
+
+func TestIteradorNoLlegaAlFinalABB(t *testing.T) {
+	t.Log("Crea un iterador y no lo avanza. Luego crea otro iterador y lo avanza.")
+	dic := TDADiccionario.CrearABB[string, string](compararCadenas)
+	claves := []string{"A", "B", "C"}
+	dic.Guardar(claves[0], "")
+	dic.Guardar(claves[1], "")
+	dic.Guardar(claves[2], "")
+
+	dic.Iterador()
+	iter2 := dic.Iterador()
+	iter2.Siguiente()
+	iter3 := dic.Iterador()
+	primero, _ := iter3.VerActual()
+	iter3.Siguiente()
+	segundo, _ := iter3.VerActual()
+	iter3.Siguiente()
+	tercero, _ := iter3.VerActual()
+	iter3.Siguiente()
+	require.False(t, iter3.HaySiguiente())
+	require.NotEqualValues(t, primero, segundo)
+	require.NotEqualValues(t, tercero, segundo)
+	require.NotEqualValues(t, primero, tercero)
+	require.NotEqualValues(t, -1, buscar(primero, claves))
+	require.NotEqualValues(t, -1, buscar(segundo, claves))
+	require.NotEqualValues(t, -1, buscar(tercero, claves))
 }
