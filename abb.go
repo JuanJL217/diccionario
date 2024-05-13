@@ -162,8 +162,21 @@ func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual, padre *nodoABB[K, V]) (*
 	}
 }
 
-func (arbol abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
-	arbol.IterarRango(nil, nil, visitar)
+func (arbol *abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	//arbol.IterarRango(nil, nil, visitar)
+	arbol.iteradorInterno(arbol.raiz, visitar)
+}
+
+// esto es lo que hice con el iterador interno sin rango, podes borrarlo igual xd
+func (arbol *abb[K, V]) iteradorInterno(nodo *nodoABB[K, V], visitar func(clave K, valor V) bool) {
+	if nodo == nil {
+		return
+	}
+	arbol.iteradorInterno(nodo.izquierdo, visitar)
+	if !visitar(nodo.clave, nodo.dato) {
+		return
+	}
+	arbol.iteradorInterno(nodo.derecho, visitar)
 }
 
 func (arbol *abb[K, V]) Iterador() IterDiccionario[K, V] {
@@ -181,8 +194,14 @@ type iteradorRangoABB[K comparable, V any] struct {
 }
 
 // --ITERADOR RANGO INTERNO--//
-func (arbol abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+func (arbol *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
 	//ME FALTAAAAAAAAAAAAAAA
+	//iter := &iteradorRangoABB[K, V]{arbol, TDAPila.CrearPilaDinamica[*nodoABB[K, V]](), desde, hasta}
+	//iter.apilarElementos(arbol.raiz)
+	//dato := iter.pila.Desapilar()
+	//for !visitar(dato.clave, dato.dato) {
+	//	dato = iter.pila.Desapilar()
+	//}
 }
 
 // -- ITERADOR RANGO EXTERNO
@@ -195,6 +214,29 @@ func (arbol *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] 
 	iteradorABB := &iteradorRangoABB[K, V]{arbol, pila, desde, hasta}
 	apilarAIzquierda(iteradorABB, arbol.raiz)
 	return iteradorABB
+}
+
+func (iterABB *iteradorRangoABB[K, V]) HaySiguiente() bool {
+	return !iterABB.pila.EstaVacia()
+}
+
+// Siguiente implements IterDiccionario.
+func (iterABB *iteradorRangoABB[K, V]) Siguiente() {
+	if !iterABB.HaySiguiente() {
+		panic(PANIC_ITERADOR)
+	}
+	nodoActual := iterABB.pila.Desapilar()
+	if nodoActual.derecho != nil {
+		apilarAIzquierda(iterABB, nodoActual.derecho)
+	}
+}
+
+// VerActual implements IterDiccionario.
+func (iterABB *iteradorRangoABB[K, V]) VerActual() (K, V) {
+	if !iterABB.HaySiguiente() {
+		panic(PANIC_ITERADOR)
+	}
+	return iterABB.pila.VerTope().clave, iterABB.pila.VerTope().dato
 }
 
 func buscarMinimo[K comparable, V any](nodo *nodoABB[K, V]) *K {
@@ -233,25 +275,18 @@ func apilarAIzquierda[K comparable, V any](iterABB *iteradorRangoABB[K, V], nodo
 	apilarAIzquierda(iterABB, nodoActual.izquierdo)
 }
 
-func (iterABB *iteradorRangoABB[K, V]) HaySiguiente() bool {
-	return !iterABB.pila.EstaVacia()
-}
-
-// Siguiente implements IterDiccionario.
-func (iterABB *iteradorRangoABB[K, V]) Siguiente() {
-	if !iterABB.HaySiguiente() {
-		panic(PANIC_ITERADOR)
+// aca estaba haciendo algo sobre el iterador para que abarque a los demas iteradores xd borralo si
+func (iter *iteradorRangoABB[K, V]) apilarElementos(nodo *nodoABB[K, V]) {
+	if nodo == nil {
+		return
 	}
-	nodoActual := iterABB.pila.Desapilar()
-	if nodoActual.derecho != nil {
-		apilarAIzquierda(iterABB, nodoActual.derecho)
+	if iter.inicio == nil || iter.arbolIterar.cmp(*iter.inicio, nodo.clave) < 0 {
+		iter.apilarElementos(nodo.izquierdo)
 	}
-}
-
-// VerActual implements IterDiccionario.
-func (iterABB *iteradorRangoABB[K, V]) VerActual() (K, V) {
-	if !iterABB.HaySiguiente() {
-		panic(PANIC_ITERADOR)
+	if iter.inicio == nil || iter.fin == nil || iter.arbolIterar.cmp(*iter.inicio, nodo.clave) >= 0 && iter.arbolIterar.cmp(*iter.fin, nodo.clave) <= 0 {
+		iter.pila.Apilar(nodo)
 	}
-	return iterABB.pila.VerTope().clave, iterABB.pila.VerTope().dato
+	if iter.fin == nil || iter.arbolIterar.cmp(*iter.fin, nodo.clave) > 0 {
+		iter.apilarElementos(nodo.derecho)
+	}
 }
