@@ -274,7 +274,7 @@ func TestIteradorInternoRangoCorte(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
 	for _, valor := range datos {
 		dic.Guardar(valor, valor)
-		if minimo >= valor && valor <= maximo {
+		if valor >= minimo && valor <= maximo {
 			solucion += valor
 		}
 	}
@@ -390,7 +390,6 @@ func TestVolumenABB(t *testing.T) {
 	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
 	for i := 0; i < len(VOLUMEN); i++ {
 		n := numeroAleatorio(TAMANIO)
-		//fmt.Println(n)
 		dic.Guardar(n, n)
 	}
 	for i := 0; i < len(VOLUMEN); i++ {
