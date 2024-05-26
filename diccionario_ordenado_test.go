@@ -11,7 +11,7 @@ import (
 
 const TAMANIO = 10000
 
-var VOLUMEN = make([]int, TAMANIO)
+var arrVolumen = make([]int, TAMANIO)
 
 func compararCadenas(a, b string) int {
 	return strings.Compare(a, b)
@@ -316,6 +316,14 @@ func TestIteradorExternoSinRangoVacioABB(t *testing.T) {
 	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.VerActual() })
 	require.PanicsWithValue(t, "El iterador termino de iterar", func() { iter.Siguiente() })
 }
+func buscarClave(clave string, claves []string) int {
+	for i, c := range claves {
+		if c == clave {
+			return i
+		}
+	}
+	return -1
+}
 
 func TestIteradorExternoSinRangoCompleto(t *testing.T) {
 	t.Log("Guardamos 3 valores en un Diccionario, e iteramos validando que las claves sean todas diferentes " +
@@ -336,19 +344,19 @@ func TestIteradorExternoSinRangoCompleto(t *testing.T) {
 
 	require.True(t, iter.HaySiguiente())
 	primero, _ := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(primero, claves))
+	require.NotEqualValues(t, -1, buscarClave(primero, claves))
 
 	iter.Siguiente()
-	segundo, segundo_valor := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(segundo, claves))
-	require.EqualValues(t, valores[buscar(segundo, claves)], segundo_valor)
+	segundo, segundoValor := iter.VerActual()
+	require.NotEqualValues(t, -1, buscarClave(segundo, claves))
+	require.EqualValues(t, valores[buscarClave(segundo, claves)], segundoValor)
 	require.NotEqualValues(t, primero, segundo)
 	require.True(t, iter.HaySiguiente())
 
 	iter.Siguiente()
 	require.True(t, iter.HaySiguiente())
 	tercero, _ := iter.VerActual()
-	require.NotEqualValues(t, -1, buscar(tercero, claves))
+	require.NotEqualValues(t, -1, buscarClave(tercero, claves))
 	require.NotEqualValues(t, primero, tercero)
 	require.NotEqualValues(t, segundo, tercero)
 	iter.Siguiente()
@@ -380,19 +388,20 @@ func TestIteradorExternoSinRango(t *testing.T) {
 	require.NotEqualValues(t, primero, segundo)
 	require.NotEqualValues(t, tercero, segundo)
 	require.NotEqualValues(t, primero, tercero)
-	require.NotEqualValues(t, -1, buscar(primero, claves))
-	require.NotEqualValues(t, -1, buscar(segundo, claves))
-	require.NotEqualValues(t, -1, buscar(tercero, claves))
+	require.NotEqualValues(t, -1, buscarClave(primero, claves))
+	require.NotEqualValues(t, -1, buscarClave(segundo, claves))
+	require.NotEqualValues(t, -1, buscarClave(tercero, claves))
 }
 
 func TestVolumenABB(t *testing.T) {
 	t.Log("Prueba de volumen")
 	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
-	for i := 0; i < len(VOLUMEN); i++ {
+	for i := 0; i < len(arrVolumen); i++ {
 		n := numeroAleatorio(TAMANIO)
+		arrVolumen[i] = n
 		dic.Guardar(n, n)
 	}
-	for i := 0; i < len(VOLUMEN); i++ {
-		require.True(t, dic.Pertenece(VOLUMEN[i]))
+	for i := 0; i < len(arrVolumen); i++ {
+		require.True(t, dic.Pertenece(arrVolumen[i]))
 	}
 }
