@@ -124,18 +124,22 @@ func (arbol *abb[K, V]) borrarConUnHijo(diferencia int, ladoIzquierdo bool, nodo
 	}
 }
 
-func reemplazante[K comparable, V any](nodoInvocado *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) { //Haremos el más derecho del nodo izquierdo del que uqeremos borrar
-	padre := nodoInvocado
-	nodoActual := nodoInvocado.derecho
-	if nodoActual.derecho == nil {
-		return nodoActual, padre
+func reemplazante[K comparable, V any](nodoInvocado *nodoABB[K, V]) (*nodoABB[K, V], *nodoABB[K, V]) {
+	nodoHijo := nodoInvocado.derecho
+	if nodoHijo == nil {
+		return nodoInvocado, nil
 	}
-	return reemplazante(nodoActual)
+	if nodoHijo.derecho == nil {
+		return nodoHijo, nodoInvocado
+	}
+	return reemplazante(nodoHijo)
 }
 
 func (arbol *abb[K, V]) borrarConDosHijos(diferencia int, nodoActual, padre *nodoABB[K, V]) {
 	reemplazo, padreDelReemplazo := reemplazante(nodoActual.izquierdo)
-	padreDelReemplazo.derecho = reemplazo.izquierdo
+	if padreDelReemplazo != nil {
+		padreDelReemplazo.derecho = reemplazo.izquierdo
+	}
 	if nodoActual == arbol.raiz {
 		arbol.raiz = reemplazo
 	} else {
@@ -145,7 +149,11 @@ func (arbol *abb[K, V]) borrarConDosHijos(diferencia int, nodoActual, padre *nod
 			padre.derecho = reemplazo
 		}
 	}
-	reemplazo.izquierdo = nodoActual.izquierdo
+	if padreDelReemplazo != nil {
+		reemplazo.izquierdo = nodoActual.izquierdo
+	} else {
+		reemplazo.izquierdo = nodoActual.izquierdo.izquierdo
+	}
 	reemplazo.derecho = nodoActual.derecho
 }
 
@@ -162,7 +170,7 @@ func (arbol *abb[K, V]) buscarNodo(clave K, nodoActual, padre *nodoABB[K, V]) (*
 	}
 }
 
-// --ITERADOR RANGO---//
+// --ITERADORES---//
 
 type iteradorRangoABB[K comparable, V any] struct {
 	arbolIterar *abb[K, V]
@@ -182,7 +190,7 @@ func (iterABB *iteradorRangoABB[K, V]) Siguiente() {
 	}
 	nodoActual := iterABB.pila.Desapilar()
 	if nodoActual.derecho != nil {
-		apilarAIzquierda(iterABB, nodoActual.derecho)
+		iterABB.apilarElementos(nodoActual.derecho)
 	}
 }
 
@@ -204,15 +212,15 @@ func (arbol *abb[K, V]) Iterador() IterDiccionario[K, V] {
 
 // --ITERADOR RANGO INTERNO--//
 func (arbol *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-	iter := &iteradorRangoABB[K, V]{arbol, TDAPila.CrearPilaDinamica[*nodoABB[K, V]](), desde, hasta}
-	iter.apilarElementos(arbol.raiz)
-	var estado bool
-	for !iter.pila.EstaVacia() && !estado {
-		dato := iter.pila.Desapilar()
-		if !visitar(dato.clave, dato.dato) {
-			estado = true
-		}
+	if desde == nil {
+		desde = buscarMinimo(arbol.raiz)
 	}
+	if hasta == nil {
+		hasta = buscarMaximo(arbol.raiz)
+	}
+	iter := &iteradorRangoABB[K, V]{arbol, TDAPila.CrearPilaDinamica[*nodoABB[K, V]](), desde, hasta}
+	iter.visitarElementos(arbol.raiz, visitar)
+
 }
 
 // -- ITERADOR RANGO EXTERNO
@@ -225,8 +233,39 @@ func (arbol *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] 
 	}
 	pila := TDAPila.CrearPilaDinamica[*nodoABB[K, V]]()
 	iteradorABB := &iteradorRangoABB[K, V]{arbol, pila, desde, hasta}
-	apilarAIzquierda(iteradorABB, arbol.raiz)
+	iteradorABB.apilarElementos(arbol.raiz)
 	return iteradorABB
+}
+
+func (iterABB *iteradorRangoABB[K, V]) apilarElementos(nodoActual *nodoABB[K, V]) {
+	if nodoActual == nil {
+		return
+	}
+	if iterABB.arbolIterar.cmp(nodoActual.clave, *iterABB.inicio) < 0 {
+		iterABB.apilarElementos(nodoActual.derecho)
+		return
+	}
+	if iterABB.arbolIterar.cmp(nodoActual.clave, *iterABB.fin) > 0 {
+		iterABB.apilarElementos(nodoActual.izquierdo)
+		return
+	}
+	iterABB.pila.Apilar(nodoActual)
+	iterABB.apilarElementos(nodoActual.izquierdo)
+}
+
+func (iterABB *iteradorRangoABB[K, V]) visitarElementos(nodo *nodoABB[K, V], visitar func(clave K, dato V) bool) {
+	if nodo == nil {
+		return
+	}
+	if iterABB.arbolIterar.cmp(nodo.clave, *iterABB.inicio) >= 0 {
+		iterABB.visitarElementos(nodo.izquierdo, visitar)
+	}
+	if iterABB.arbolIterar.cmp(nodo.clave, *iterABB.inicio) >= 0 && iterABB.arbolIterar.cmp(nodo.clave, *iterABB.fin) <= 0 {
+		visitar(nodo.clave, nodo.dato)
+	}
+	if iterABB.arbolIterar.cmp(nodo.clave, *iterABB.fin) <= 0 {
+		iterABB.visitarElementos(nodo.derecho, visitar)
+	}
 }
 
 func buscarMinimo[K comparable, V any](nodo *nodoABB[K, V]) *K {
@@ -247,35 +286,4 @@ func buscarMaximo[K comparable, V any](nodo *nodoABB[K, V]) *K {
 		return &nodo.clave
 	}
 	return buscarMaximo(nodo.derecho)
-}
-
-func apilarAIzquierda[K comparable, V any](iterABB *iteradorRangoABB[K, V], nodoActual *nodoABB[K, V]) {
-	if nodoActual == nil {
-		return
-	}
-	if iterABB.arbolIterar.cmp(nodoActual.clave, *iterABB.inicio) < 0 {
-		apilarAIzquierda(iterABB, nodoActual.derecho)
-		return
-	}
-	if iterABB.arbolIterar.cmp(nodoActual.clave, *iterABB.fin) > 0 {
-		apilarAIzquierda(iterABB, nodoActual.izquierdo)
-		return
-	}
-	iterABB.pila.Apilar(nodoActual)
-	apilarAIzquierda(iterABB, nodoActual.izquierdo)
-}
-
-func (iter *iteradorRangoABB[K, V]) apilarElementos(nodo *nodoABB[K, V]) {
-	if nodo == nil {
-		return
-	}
-	if iter.inicio == nil || iter.arbolIterar.cmp(nodo.clave, *iter.inicio) >= 0 {
-		iter.apilarElementos(nodo.izquierdo)
-	}
-	if iter.inicio == nil || iter.fin == nil || iter.arbolIterar.cmp(nodo.clave, *iter.inicio) >= 0 && iter.arbolIterar.cmp(nodo.clave, *iter.fin) <= 0 {
-		iter.pila.Apilar(nodo)
-	}
-	if iter.fin == nil || iter.arbolIterar.cmp(nodo.clave, *iter.fin) <= 0 {
-		iter.apilarElementos(nodo.derecho)
-	}
 }

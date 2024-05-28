@@ -289,6 +289,46 @@ func TestIteradorInternoRangoCorte(t *testing.T) {
 
 }
 
+func TestIteradorComun(t *testing.T) {
+	t.Log("Iterador Interno común")
+	datos := []int{100, 50, 150, 25, 75, 125, 200, 10, 30, 60, 80, 110, 130, 190, 300}
+	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
+	solucion := 0
+	for _, valor := range datos {
+		dic.Guardar(valor, valor)
+		solucion += valor
+	}
+
+	suma := 0
+	dic.Iterar(func(c int, v int) bool {
+		suma += c
+		return true
+	})
+	require.Equal(t, solucion, suma)
+}
+
+func TestIteradorExternoComun(t *testing.T) {
+	t.Log("Ierador Externo común hasta nil")
+	datos := []int{100, 50, 150, 25, 75, 125, 200, 10, 30}
+	minimo := 70
+	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
+	solucion := 0
+	for _, valor := range datos {
+		dic.Guardar(valor, valor)
+		if valor >= minimo {
+			solucion += valor
+		}
+	}
+	suma := 0
+	dic.IterarRango(&minimo, nil, func(c int, v int) bool {
+		//sumamos todas las claves que esten compredidos en el rango
+		suma += c
+		return true
+	})
+
+	require.Equal(t, solucion, suma)
+}
+
 func TestIteradorInternoConRangoCompleto(t *testing.T) {
 	t.Log("Iteramos todos los elementos usando el iterador interno con rango , el comportamiento tiene que ser como el iterador interno sin rango")
 	var (
@@ -404,4 +444,58 @@ func TestVolumenABB(t *testing.T) {
 	for i := 0; i < len(arrVolumen); i++ {
 		require.True(t, dic.Pertenece(arrVolumen[i]))
 	}
+}
+
+func TestBorrarElementoYAgregarElemento(t *testing.T) {
+	t.Log("Se agrega un elemento borrado y se ejecuta sin problemas")
+	numeros := []int{20, 10, 15, 12, 13, 18, 17, 16, 19, 26, 22, 25, 28, 50, 40, 56, 39, 41, 44, 46, 45}
+	dic := TDADiccionario.CrearABB[int, int](compararNumeros)
+	for _, valor := range numeros {
+		dic.Guardar(valor, valor)
+	}
+
+	borrado1 := 15
+	borrado2 := 18
+	borrado3 := 20
+	borrado4 := 50
+
+	t.Log("Borramos y agregamos a un padre con 2 hijos")
+	dic.Borrar(borrado1)
+	require.False(t, dic.Pertenece(borrado1))
+	for _, valor := range numeros {
+		if valor != borrado1 {
+			require.True(t, dic.Pertenece(valor))
+		}
+	}
+	dic.Guardar(borrado1, borrado1)
+
+	t.Log("Borramos la raiz y lo agregamos")
+	dic.Borrar(borrado2)
+	require.False(t, dic.Pertenece(borrado2))
+	for _, valor := range numeros {
+		if valor != borrado2 {
+			require.True(t, dic.Pertenece(valor))
+		}
+	}
+	dic.Guardar(borrado2, borrado2)
+
+	t.Log("Borramos")
+	dic.Borrar(borrado3)
+	require.False(t, dic.Pertenece(borrado3))
+	for _, valor := range numeros {
+		if valor != borrado3 {
+			require.True(t, dic.Pertenece(valor))
+		}
+	}
+	dic.Guardar(borrado3, borrado3)
+
+	t.Log("Borramos un elemento con 2 hijos y su reemplazdo que tiene 1 hijo")
+	dic.Borrar(borrado4)
+	require.False(t, dic.Pertenece(borrado4))
+	for _, valor := range numeros {
+		if valor != borrado4 {
+			require.True(t, dic.Pertenece(valor))
+		}
+	}
+	dic.Guardar(borrado4, borrado4)
 }
